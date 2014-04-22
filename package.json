@@ -1,0 +1,27 @@
+{
+	"name":	"node_workbook",
+	"author":	"J.D. Lowe <jdlowe.dev@gmail.com>",
+	"description": "Create, manipulate, and save .xlsx files with JavaScript",
+	"repository": {
+		"type": "git",
+		"url": "git://github.com/jdllama/node_workbook.git"
+	},
+	"bugs": {
+		"url": "https://github.com/jdllama/node_workbook/issues"
+	},
+	"main": "./node_workbook",
+	"version": "0.0.1",
+	"dependencies": {
+		"jszip": ">=2.2.0",
+		"xml2js": ">=0.4.2"
+	},
+	"keywords": [
+		"node_workbook",
+		"xlsx",
+		"spreadsheet",
+		"generate",
+		"create",
+		"manipulate",
+		"Excel"
+	]
+}
