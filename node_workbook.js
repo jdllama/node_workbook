@@ -8,8 +8,14 @@ function node_workbook() {
 	var labels = [];
 	var activeTab = "";
 	var sheetCount = 0;
+	var sheet = require("./sheet");
 	
-	function compare(arr1, arr2) {
+	var row = require("./row");
+	this.row = row;
+	var cell = require("./cell");
+	this.cell = cell;
+	
+	var compare = function(arr1, arr2) {
 		var arr1 = arr1, arr2 = arr2;
 		if(arr1.length !== arr2.length) return false;
 		for(var i = 0;i<arr1.length;i++) {
@@ -73,53 +79,6 @@ function node_workbook() {
 		}
 		return column;
 	}
-	
-	function cell(options) {		
-		if(!(this instanceof cell)) return new cell(options);
-		var config = extend({val: null, style: {}, type: null}, options);
-		this.val = function(str) {
-			if(str) {
-				config.val = str;
-				return this;
-			}
-			return config.val;
-		}
-		this.style = function(styling) {
-			if(styling) {
-				config.style = extend(config.style, styling);
-				return this;
-			}
-			return config.style;
-		}
-		this.type = function(newType) {
-			if(newType) {
-				config.type = newType;
-				return this;
-			}
-			return config.type;
-		}
-		return this;
-	}
-	
-	this.cell = cell;
-	
-	function row(options) {
-		if(!(this instanceof row)) return new row(options);
-		var config = extend({cells: [], style: {}}, options);
-		this.addCell = function(newCell) {
-			config.cells.push(newCell);
-			return this;
-		}
-		this.getCells = function() {
-			return config.cells;
-		}
-		this.getStyle = function() {
-			return config.style;
-		}
-		return this;
-	}
-	
-	this.row = row;
 	
 	this.generateXlsx = function(fileName) {
 		var keys = Object.keys(registered);
@@ -334,43 +293,7 @@ function node_workbook() {
 			id: id
 		}
 		labels.push(label);
-		return (function sheet(myLabel, _this) {
-			if(!(this instanceof sheet)) return new sheet(myLabel, _this);
-			var _this = _this;
-			var label = myLabel;
-			this.addRow = function(arr) {
-				if(!registered[label]) throw new Error("Sheet " + label + " no longer exists.");
-				if(!arr) throw new Error("Row missing.");
-				if(!(arr instanceof row) && Object.prototype.toString.call(arr) !== "[object Array]") throw new Error("Array expected in addRow");
-				registered[label].config.rows.push(arr);
-				return this;
-			}
-			this.removeRow = function() {
-				if(!registered[label]) throw new Error("Sheet " + label + " no longer exists.");
-				registered[label].config.rows.pop();
-				return this;
-			}
-			this.parent = function() {
-				return _this;
-			}
-			this.setActive = function() {
-				activeTab = label;
-				return this;
-			}
-			this.setLabel = function(newLabel) {
-				if(registered[newLabel]) throw new Error("Sheet already exists with label " + newLabel);
-				var temp = registered[label];
-				delete registered[label];
-				registered[newLabel] = temp;
-				label = newLabel;
-				return this;
-			}
-			this.removeSheet = function() {
-				this.parent().removeSheet(label);
-				delete this;
-			}
-			return this;
-		})(label, this);
+		return sheet(label, this, registered);
 	}
 	
 	this.removeSheet = function(label) {
@@ -426,29 +349,37 @@ function node_workbook() {
 		for(id in targets) {
 			if(s = myXlsx.file("xl/" + targets[id])) {
 				var sheet = s.asText();
+				console.log(sheet);
 				var label = idToSheet1[id];
 				results.sheets[label] = [];
 				xml2js.parseString(sheet, function(err, result) {
-					result["worksheet"]["sheetData"][0].row.forEach(function(row) {
-						var newRow = [];
-						row.c.forEach(function(cell) {
-							var col = cell.$.r.match(/[a-zA-Z]*/g)[0];
-							var rowLen = charToCol(col);
-							while(newRow.length < rowLen - 1) newRow.push("");
-							var type = cell.$.t;
-							if(!type) newRow.push(parseFloat(cell.v[0]));
-							else {
-								if(type === "b") {
-									newRow.push(cell.v[0] === "1");
-								}
-								else if(type === "s") {
-									var ind = parseInt(cell.v[0]);
-									newRow.push(sharedStrings[ind]);
-								}
-							}
-						});
-						results.sheets[label].push(newRow);
-					});
+					if(result["worksheet"] 
+						&& result["worksheet"]["sheetData"]
+						&& result["worksheet"]["sheetData"][0]
+						&& result["worksheet"]["sheetData"][0].row) {
+							result["worksheet"]["sheetData"][0].row.forEach(function(row) {
+								var newRow = [];
+								row.c.forEach(function(cell) {
+									var col = cell.$.r.match(/[a-zA-Z]*/g)[0];
+									var rowLen = charToCol(col);
+									while(newRow.length < rowLen - 1) newRow.push("");
+									if(cell.v) {
+										var type = cell.$.t;
+										if(!type) newRow.push(parseFloat(cell.v[0]));
+										else {
+											if(type === "b") {
+												newRow.push(cell.v[0] === "1");
+											}
+											else if(type === "s") {
+												var ind = parseInt(cell.v[0]);
+												newRow.push(sharedStrings[ind]);
+											}
+										}
+									}
+								});
+								results.sheets[label].push(newRow);
+							});
+					}
 				});
 			}
 		}
@@ -466,7 +397,7 @@ function node_workbook() {
 		return this;
 	}
 	
-	this.toObject = function() {
+	this.toRaw = function() {
 		var t = registered;
 		return t;
 	}
