@@ -197,7 +197,7 @@ function node_workbook() {
 								var str = el2;
 								//This...this is weird. I'm used to escaping out characters, but in every test I have done, it looks bad. Leaving this commented out.
 								//Because science.
-								//str = str.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");//.replace(/&/g, "&amp;");//.replace(/'/g, "&pos;");
+								str = str.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/&/g, "&amp;");//.replace(/'/g, "&pos;");
 								if(str.charAt(0) === "=") {
 									str = str.substr(1);
 									myCell = {
